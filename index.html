@@ -1,0 +1,133 @@
+<html>
+<head>
+</head>
+<body>
+
+<p>Upload a build file</p>
+<input type="file" onchange="printbuild(this)">
+
+<p>Upload a LISP File</p>
+<input type="file" onchange="validatelisp(this)">
+
+<script>
+    function validatelisp(input){
+        const file = input.files[0];
+        const reader = new FileReader();
+        const openparen = [];
+        const closeparen = [];
+        reader.onload = (event) => {
+            const file = event.target.result;
+            //Making a singleline string
+            const singleline = file.replace(/[\r\n\s]+/gm,"");
+
+            console.log(singleline)
+            //Traversing array forward and looking for open parenthesis
+            for(let i=0; i< singleline.length; i++){
+                //Making sure first character is an open paren
+                if(singleline[0] != '('){
+                    console.log("File content must starts with an open parenthesis")
+                    return 1;
+                }
+                //If value is an open paren, push it into array
+                if(singleline[i] == '('){
+                    openparen.push(singleline[i])
+                    console.log(openparen)
+                }
+                //If value is close paren, pop the open paren out of array
+                if(singleline[i] == ')'){
+                    openparen.pop(singleline[i])
+                    console.log(openparen)
+                }
+            }
+            //Traversing array backward and looking for close parenthesis
+            for(let i=singleline.length; i>=0; i--){
+                //Making sure last character is a close paren
+                if(singleline[singleline.length-1] != ')'){
+                    console.log("File content must ends with a close parenthesis")
+                    return 1;
+                }
+                //If value is a close paren, push it into array
+                if(singleline[i] == ')'){
+                    closeparen.push(singleline[i])
+                }
+                //If value is an open paren, pop the close paren out of array
+                if(singleline[i] == '('){
+                    closeparen.pop(singleline[i])
+                }
+            }
+            //In the end, if both open and close arrays are empty, then parenthesis matches
+            if((openparen.length == 0) && (closeparen.length == 0)){
+                console.log("Paranthesis matches")
+            }
+            //Otherwise, print extra parenthesis
+            else{
+                console.log("Paranthesis do not match.  Extra: " + openparen + " " + closeparen)
+            }
+            
+            
+        };
+        reader.onerror = (event) => {
+            alert(event.target.error.name);
+        };
+        reader.readAsText(file);
+    }
+    function printbuild(input) {
+        const file = input.files[0];
+        const reader = new FileReader();
+        const builds = [];
+        var temp = 1;
+        var consec = 0;
+
+        reader.onload = (event) => {
+            const file = event.target.result;
+            const lines = file.split(/\r\n|\n/);
+            // Reading line by line
+            lines.forEach((line) => {
+                if (line.match("FAILED")){
+                    builds.push(line.split(' '))
+                }
+            });
+            builds == builds.sort((function(index){
+                return function(a, b){
+                    return (a[index] === b[index] ? 0 : (a[index] < b[index] ? -1 : 1));
+                };
+            })(1));
+            
+            //console.log(builds);
+            for(let i=1;i<builds.length;i++){
+                // If current build name equals last build name
+                if ( builds[i][1] == builds[i-1][1] ){
+                    //Check for consecutive, if current build number minus last build number equals 1
+                    if (parseInt(builds[i][0]) - parseInt(builds[i-1][0]) == 1) {
+                        //Increase temp by one
+                        temp++
+                        //if temp is greater than consec, consec equals temp
+                        if (temp > consec){
+                            consec = temp
+                        }
+                    }
+                    //set temp back to 1 if build numbers not consecutive
+                    else{
+                        temp = 1
+                    }
+                }
+                //set temp back to 1 if build name change
+                else{
+                    temp = 1
+                }
+                //if consec is greater than 1 and build name does not match or end of the array
+                if( (consec > 1) && ((builds[i][1] != builds[i-1][1]) || (i+1 == builds.length))){
+                        console.log("Build " + builds[i-1][1] + " failed " + consec + " consecutive times.")
+                        consec = 0
+                }
+            }
+        };
+        reader.onerror = (event) => {
+            alert(event.target.error.name);
+        };
+        reader.readAsText(file);
+    }
+</script>
+</input>
+</body>
+</html>
